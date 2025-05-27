@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        BQuote Sign ⭐
 // @namespace        http://tampermonkey.net/
-// @version        0.9
+// @version        1.0
 // @description        引用部「blockquote」をデザインする「Ctrl+F2」
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventry*
@@ -663,10 +663,10 @@ function main(){
             'height: 16px; border: 1px solid #fff; background: #fff; vertical-align: -3px; '+
             'margin-left: -2px; } '+
             '#bq_color, #bqm_color { cursor: pointer; background: #fff; } '+
-            '#bq_trance, #bqm_trance { height: 22px; width: 15px; border: none; '+
-            'vertical-align: 1px; background: transparent; margin-right: -2px; } '+
-            '#bq_trance::-webkit-inner-spin-button, '+
-            '#bqm_trance::-webkit-inner-spin-button { opacity: 1; } '+
+            '#bq_trance, #bqm_trance { height: 21px; width: 15px; border: none; '+
+            'vertical-align: 1px; background: #fff; margin-right: -2px; } '+
+            '#bq_trance::-webkit-inner-spin-button, #bqm_trance::-webkit-inner-spin-button '+
+            '{ opacity: 1; height: 18px; margin-top: 3px; } '+
             '#help_bq { background: #37474f !important; margin: 0 6px; cursor: pointer; }';
 
         if(ua==1){
