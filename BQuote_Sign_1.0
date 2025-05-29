@@ -670,7 +670,7 @@ function main(){
             '#help_bq { background: #37474f !important; margin: 0 6px; cursor: pointer; }';
 
         if(ua==1){
-            disp_bq +='#bq_trance { width: 18px; }'; }
+            disp_bq +='#bq_trance, #bqm_trance { height: 18px; width: 18px; }'; }
 
         disp_bq +='</style></div>';
 
