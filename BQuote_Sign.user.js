@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        BQuote Sign ⭐
 // @namespace        http://tampermonkey.net/
-// @version        1.0
+// @version        1.1
 // @description        引用部「blockquote」をデザインする「Ctrl+F2」
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventry*
@@ -15,6 +15,7 @@
 
 let mode=0; // ツールのON/OFF
 let bq_set; // デザイン種
+
 
 let retry=0;
 let interval=setInterval(wait_target, 100);
@@ -43,7 +44,7 @@ function main(){
     let read_json=localStorage.getItem('BQ_Style');
     let bqcard_set=JSON.parse(read_json);
     if(!Array.isArray(bqcard_set)){
-        bqcard_set=[0, "#fff", "#fff", "", ""]; }
+        bqcard_set=[0, "#fff", "#fff", "0", ""]; }
 
     let write_json=JSON.stringify(bqcard_set);
     localStorage.setItem('BQ_Style', write_json);
@@ -128,7 +129,7 @@ function main(){
                 event.stopImmediatePropagation();
                 if(mode==1 &&
                    !card.classList.contains('edit_card') && event.ctrlKey){ // 対象カードに指定
-                    if(!card.classList.contains('twitter-tweet')){
+                    if(!card.classList.contains('twitter-tweet')){ // 埋込ツィッターは除外
                         card_close(); // 他のCardを閉じる
                         sign_reset();
                         card.classList.add('edit_card');
@@ -143,6 +144,7 @@ function main(){
             set_mark(card);
             bgm_color(card);
             bg_color(card);
+            t_justify(card);
             mem_plus(card);
             mem_paste(card);
         }} // edit_in()
@@ -159,7 +161,10 @@ function main(){
         let bq_trance=document.querySelector('#bq_trance');
         if(bq_color && bq_trance){
             bq_color.style.backgroundColor='rgb(255, 255, 255)';
-            bq_trance.value=1; }}
+            bq_trance.value=1; }
+        let bqj=document.querySelector('#bqj');
+        if(bqj){
+            bqj.style.fill='rgb(204, 204, 204)'; }}
 
 
 
@@ -167,7 +172,7 @@ function main(){
         let bqm=card.querySelector('.bqm');
         if(!bqm){
             add_style(card, 0);
-            add_svg(card, 0); }
+            add_mark(card, 0); }
         else{
             for(let k=0; k<10; k++){
                 if(bqm.classList.contains('m'+k)){
@@ -184,8 +189,9 @@ function main(){
                         bq_set=0; }
 
                     add_style(card, bq_set);
-                    add_svg(card, bq_set);
-                }}}}
+                    add_mark(card, bq_set); }}
+
+        }} // set_mark()
 
 
     function add_style(card, n){
@@ -196,88 +202,89 @@ function main(){
             case 3:
                 card.style.border='1px solid #ddd';
                 card.style.position='relative';
-                card.style.padding='0.32em 0 0.2em 3em';
+                card.style.padding='0.32em 0.5em 0.2em 3em';
                 card.style.margin='0.5em 0';
                 break;
             case 4:
                 card.style.borderLeft='5px solid';
                 card.style.position='relative';
-                card.style.padding='0.32em 0 0.2em 1.5em';
-                card.style.margin='0.5em 0 0.5em 1em';
+                card.style.padding='0.32em 0.5em 0.2em 0.6em';
+                card.style.margin='0.5em 0 0.5em 0';
                 break;
             case 5:
                 card.style.borderLeft='25px solid';
                 card.style.position='relative';
-                card.style.padding='0.32em 0 0.2em 0.5em';
+                card.style.padding='0.32em 0.5em 0.2em 0.5em';
                 card.style.margin='0.5em 0';
                 break;
             case 6:
                 card.style.borderLeft='25px solid';
                 card.style.position='relative';
-                card.style.padding='0.32em 0 0.2em 0.5em';
+                card.style.padding='0.32em 0.5em 0.2em 0.5em';
                 card.style.margin='0.5em 0';
                 break;
             case 7:
                 card.style.border='1px solid #ddd';
                 card.style.position='relative';
-                card.style.padding='0.32em 0 0.2em 2em';
+                card.style.padding='0.32em 0.5em 0.2em 2em';
                 card.style.margin='0.5em 0';
                 break;
-        }}
+
+        }} // add_style()
 
 
-    function add_svg(card, n){
-        let SVG_bqm;
+    function add_mark(card, n){
+        let mark_bqm;
         switch(n){
             case 0:
-                SVG_bqm=
+                mark_bqm=
                     '<i class="bqm m0" '+
                     'style="font-size: 48px; color: #fff; background: transparent; '+
                     'position: absolute; top: -8px; left: 10px; '+
                     'filter: drop-shadow(black 0 0 0.6px); font-style: normal;">❝</i>';
                 break;
             case 1:
-                SVG_bqm=
+                mark_bqm=
                     '<i class="bqm m1" '+
                     'style="font-size: 48px; color: #fff; background: transparent; '+
                     'position: absolute; top: -8px; left: 10px; font-style: normal;">❝</i>';
                 break;
             case 2:
-                SVG_bqm=
+                mark_bqm=
                     '<i class="bqm m2" '+
                     'style="font-size: 48px; color: #fff; background: transparent; '+
                     'position: absolute; top: -8px; left: 10px; '+
                     'text-shadow: 1px 1px 1px black, 0 0 1px black; font-style: italic;">"</i>';
                 break;
             case 3:
-                SVG_bqm=
+                mark_bqm=
                     '<i class="bqm m3" '+
                     'style="font-size: 48px; color: #fff; background: transparent; '+
                     'position: absolute; top: -8px; left: 10px; '+
                     'text-shadow: white 1px 0.6px; font-style: italic;">"</i>';
                 break;
             case 4:
-                SVG_bqm=
+                mark_bqm=
                     '<i class="bqm m4" '+
                     'style="font-size: 0; color: #fff; background: transparent; '+
                     'position: absolute; top: -8px; left: 10px;"> </i>';
                 break;
             case 5:
-                SVG_bqm=
+                mark_bqm=
                     '<i class="bqm m5" '+
                     'style="font-size: 40px; color: #fff; background: transparent; '+
                     'filter: brightness(50) drop-shadow(1px 1px 1px black); '+
                     'position: absolute; top: -4px; left: -23px; font-style: normal;">❝</i>';
                 break;
             case 6:
-                SVG_bqm=
+                mark_bqm=
                     '<i class="bqm m6" '+
                     'style="font-size: 40px; color: #fff; background: transparent; '+
                     'filter: brightness(0); '+
                     'position: absolute; top: -4px; left: -23px; font-style: normal;">❝</i>';
                 break;
             case 7:
-                SVG_bqm=
+                mark_bqm=
                     '<i class="bqm m7" '+
                     'style="font-size: 40px; color: #fff; background: transparent; '+
                     'position: absolute; top: -4px; left: 4px; font-style: normal;">❝</i>';
@@ -285,23 +292,21 @@ function main(){
         } // switch()
 
 
-
-        let svg_quote=card.querySelector('svg'); // svg使用タイプの継承
+        let svg_quote=card.querySelector('svg'); // 旧svg使用タイプのデザインを継承
         if(svg_quote){
             let quote_color=svg_quote.style.fill;
             let bqm_color=document.querySelector('#bqm_color');
             if(quote_color && bqm_color){
                 bqm_color.style.backgroundColor=quote_color; }
-            svg_quote.remove(); } // svg画像を削除
+            svg_quote.remove(); } // 旧svg画像を削除
 
 
-
-        let SVG=iframe_doc.createElement('i');
+        let Mark=iframe_doc.createElement('i');
         if(!card.querySelector('i')){
-            card.appendChild(SVG); }
-        card.querySelector('i').outerHTML=SVG_bqm;
+            card.appendChild(Mark); }
+        card.querySelector('i').outerHTML=mark_bqm;
 
-        let bqm=card.querySelector('.bqm'); // SVGマーク
+        let bqm=card.querySelector('.bqm'); // 生成した引用マーク
         let bqm_color=document.querySelector('#bqm_color');
 
         if(bqm && bqm_color.style.backgroundColor){
@@ -309,17 +314,17 @@ function main(){
             if(n==4 || n==5 || n==6){
                 card.style.borderLeftColor=bqm_color.style.backgroundColor; }}
 
-    } // add_svg()
+    } // add_mark()
 
 
 
     function bgm_color(card){
         let set_color;
-        let bqm_c; // 引用部の svg色・縦傍線色
+        let bqm_c; // 引用の マーク色・縦傍線色
         let bqm_color=document.querySelector('#bqm_color');
         let bqm_trance=document.querySelector('#bqm_trance');
 
-        let bqm=card.querySelector('.bqm'); // SVGマーク
+        let bqm=card.querySelector('.bqm'); // 引用マーク
         if(!bqm){
             bq_set=0;
             bqm_c='rgb(255, 255, 255)'; }
@@ -329,7 +334,7 @@ function main(){
                     bq_set=k;
                     break; }}
             if(bqm.style.color){
-                bqm_c=bqm.style.color; } // 縦傍線色は svg色をコピーする
+                bqm_c=bqm.style.color; } // 縦傍線色は マーク色をコピーする
             else{
                 bqm_c='rgb(255, 255, 255)'; }}
 
@@ -499,6 +504,35 @@ function main(){
 
 
 
+    function t_justify(card){
+        let justify=0; // 均等表示のフラグ
+
+        let bqj=document.querySelector('#bqj');
+        let bq_justify=card.style.textAlign;
+        if(!bq_justify || bq_justify!='justify'){
+            bq_justify=''; }
+
+        if(bq_justify=='justify'){
+            justify=1;
+            bqj.style.fill='#333'; }
+        else{
+            justify=0;
+            bqj.style.fill='#ccc'; }
+
+        bqj.onclick=function(){
+            if(justify==0){
+                justify=1;
+                bqj.style.fill='#333';
+                card.style.textAlign='justify'; }
+            else{
+                justify=0;
+                bqj.style.fill='#ccc';
+                card.style.textAlign=''; }}
+
+    } // t_justify()
+
+
+
     function mem_plus(card){
         let bqmpl=document.querySelector('#bqmpl');
         if(bqmpl){
@@ -513,8 +547,9 @@ function main(){
 
                         let bqm_c;
                         let bq_bgc;
+                        let bq_justify;
 
-                        let bqm=card.querySelector('.bqm'); // SVGマーク
+                        let bqm=card.querySelector('.bqm'); // 引用マーク
                         if(!bqm){
                             bq_set=0;
                             bqm_c='rgb(255, 255, 255)'; }
@@ -535,6 +570,14 @@ function main(){
                             bq_bgc='rgb(255, 255, 255)'; }
                         bqcard_set[2]=bq_bgc;
 
+                        let justify;
+                        bq_justify=card.style.textAlign;
+                        if(bq_justify!='justify'){
+                            justify=0; }
+                        else{
+                            justify=1; }
+                        bqcard_set[3]=justify;
+
                         let write_json=JSON.stringify(bqcard_set);
                         localStorage.setItem('BQ_Style', write_json); // ストレージ保存
                     }}}}
@@ -552,12 +595,13 @@ function main(){
                     let bqm_trance=document.querySelector('#bqm_trance');
                     let bq_color=document.querySelector('#bq_color');
                     let bq_trance=document.querySelector('#bq_trance');
+                    let bqj=document.querySelector('#bqj');
 
                     if(bqm_color && bqm_trance){
                         bqm_color.style.backgroundColor=bqcard_set[1];
                         bqm_trance.value=1; }
                     add_style(card, bqcard_set[0]);
-                    add_svg(card, bqcard_set[0]);
+                    add_mark(card, bqcard_set[0]);
 
                     if(bq_color && bq_trance){
                         bq_color.style.backgroundColor=bqcard_set[2];
@@ -566,7 +610,18 @@ function main(){
 
                     bgm_color(card);
                     bg_color(card);
-                }}
+
+                    if(bqj){
+                        if(bqcard_set[3]!='1'){
+                            bqj.style.fill='#ccc';
+                            card.style.textAlign=''; }
+                        else{
+                            bqj.style.fill='#333';
+                            card.style.textAlign='justify'; }}
+
+                    t_justify(card);
+
+                }} // bqmps.onclick
 
         }} // mem_paste()
 
@@ -602,6 +657,26 @@ function main(){
             '73L42 129C34 137 22 145 20 157C18 172 37 192 53 190C62 188 68 179 '+
             '74 173L100 147z"></path></svg>';
 
+        let SVG_bqj=
+            '<svg id="bqj" style="width: 28px; height: 16px; fill: #333;" '+
+            'viewBox="40 20 540 360">'+
+            '<path d="M45 48C38 50 31 53 28 60C26 66 '+
+            '27 74 27 81L27 120L27 273L27 319C27 327 26 336 28 343C32 357 51 359 '+
+            '63 357C70 355 77 352 80 345C82 339 81 331 81 324L81 285L81 132L81 86'+
+            'C81 78 82 69 80 62C76 48 57 46 45 48M556 48C549 50 542 53 539 60C537'+
+            ' 66 538 74 538 81L538 120L538 273L538 319C538 327 537 336 539 343C54'+
+            '3 357 562 359 574 357C581 355 588 352 591 345C593 339 592 331 592 32'+
+            '4L592 285L592 132L592 86C592 78 593 69 591 62C587 48 568 46 556 48M4'+
+            '18 175C411 175 405 176 399 180C377 196 388 230 415 231L388 258C379 2'+
+            '67 371 276 377 289C379 293 384 297 387 300C392 305 397 308 404 309C4'+
+            '13 309 419 303 425 297L457 265L496 226C503 219 511 213 511 203C511 1'+
+            '90 501 182 492 173L436 117C428 109 420 97 408 95C392 93 372 113 375 '+
+            '129C377 137 386 143 392 149L418 175M152 175C135 179 125 199 133 215C'+
+            '138 227 151 233 164 230C182 227 191 206 183 190C177 178 164 173 152 '+
+            '175M281 175C264 179 254 199 262 215C267 227 280 233 293 230C311 227 '+
+            '320 206 312 190C306 178 293 173 281 175z"></path>'+
+            '</svg>';
+
         let SVG_bqmpl=
             '<svg id="bqmpl" viewBox="-45 -20 540 540">'+
             '<path fill="#333" d="M416 208H272V64c0-18-14-32-32-32h-32c-18 '+
@@ -623,7 +698,7 @@ function main(){
 
         let disp_bq=
             '<div id="disp_bq">'+ SVG_h +
-            '<span class="bqs_hint hint"><b>▼</b> BlockQuote指定: Ctrl+Click</span>'+
+            '<span class="bqs_hint hint"><b>▼</b> BlockQuote指定</span>'+
             '<span class="bqz_hint hint">マーク: '+ SVG_bqz +'</span>　'+
             '<span class="bqc_hint hint">色: '+
             '<span class="bqc_w"><span id="bqm_color">　</span></span></span> '+
@@ -633,6 +708,7 @@ function main(){
             '<span class="bqc_w"><span id="bq_color">　</span></span></span> '+
             '<input id="bq_trance" type="number" max="10" min="0.1" step="0.1">'+
             ' :濃度　'+
+            '<span class="bqj_hint hint">均等: '+ SVG_bqj+'</span>　'+
             'M: <span class="bqmpl_hint hint">'+ SVG_bqmpl +'</span> '+
             '<span class="bqmp_hint hint">'+ SVG_bqmps +'</span>'+
 
@@ -652,6 +728,8 @@ function main(){
             'content: "　デザイン変更：Click ▲　"; } '+
             '#disp_bq .bqc_hint.hint:hover::after { top: 27px; right: -24px; '+
             'content: "　カラーパレット表示：Click ▲　"; } '+
+            '#disp_bq .bqj_hint.hint:hover::after { top: 27px; left: -220px; '+
+            'content: "　行の均等割付け ON・OFF：Click ▲　"; } '+
             '#disp_bq .bqmpl_hint.hint:hover::after { top: 27px; left: -178px; '+
             'content: "　デザイン登録：Click ▲　"; } '+
             '#disp_bq .bqmp_hint.hint:hover::after { top: 27px; left: -226px; '+
