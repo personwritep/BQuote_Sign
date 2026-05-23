@@ -1,0 +1,479 @@
+// ==UserScript==
+// @name         BQuote Sign ⭐
+// @namespace    http://tampermonkey.net/
+// @version      0.2
+// @description  引用部「blockquote」をデザインする「Ctrl+F2」
+// @author       personwritep
+// @match        https://blog.ameba.jp/ucs/entry/srventry*
+// @exclude      https://blog.ameba.jp/ucs/entry/srventrylist.do*
+// @grant         none
+// ==/UserScript==
+
+
+let mode=0; // ツールのON/OFF
+
+let retry=0;
+let interval=setInterval(wait_target, 100);
+function wait_target(){
+    retry++;
+    if(retry>10){
+        clearInterval(interval); }
+    let target=document.querySelector('#cke_1_contents');
+    if(target){
+        clearInterval(interval);
+        main(); }}
+
+
+
+function main(){
+    let editor_iframe;
+    let iframe_doc;
+    let iframe_body;
+
+    let ua=0;
+    let agent=window.navigator.userAgent.toLowerCase();
+    if(agent.indexOf('firefox')>-1){ ua=1; }
+
+    /*
+    let read_json=localStorage.getItem('LinkCard Style');
+    let lcard_set=JSON.parse(read_json);
+    if(!Array.isArray(lcard_set)){
+        lcard_set=
+            [0, 0, "white", 1, "#e2e2e2", 0, "#333", "red", "", "", 0]; }
+    if(lcard_set.length<11){
+        lcard_set[6]="#333";
+        lcard_set[7]="red";
+        lcard_set[8]="";
+        lcard_set[9]="";
+        lcard_set[10]=0; }
+
+    let write_json=JSON.stringify(lcard_set);
+    localStorage.setItem('LinkCard Style', write_json);
+*/
+
+
+    let target0=document.querySelector('#cke_1_contents');
+    let monitor0=new MutationObserver( catch_key );
+    monitor0.observe(target0, {childList: true});
+
+    catch_key();
+
+    function catch_key(){
+        editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+        if(editor_iframe){
+            iframe_doc=editor_iframe.contentWindow.document;
+            if(iframe_doc){
+
+                when_back();
+
+                iframe_doc.addEventListener('keydown', check_key);
+                document.addEventListener('keydown', check_key);
+
+                function check_key(event){
+                    if(event.ctrlKey && event.keyCode==113){ // ショートカット「Ctrl+F2」
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        if(mode==0 && editor_iframe){
+                            mode=1;
+                            sign();
+                            card_edit(); }
+                        else if(mode==1 && editor_iframe){
+                            mode=0;
+                            sign_clear();
+                            card_close(); }}
+
+                    if(event.keyCode==116){
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        alert(
+                            "　⛔　F5 / Ctrl + F5 / Shift + F5　\n"+
+                            "　　　　このショートカットは現在のページを遷移して、編集中の\n"+
+                            "　　　　データを損失する可能性があるので、無効にしています。\n"+
+                            "　　　　　　-----　BQuote Sign　-----"); }}}}
+
+        before_end();
+
+    } // catch_key()
+
+
+
+    function when_back(){
+        if(mode==1){
+            sign();
+            card_close();
+            card_edit(); }}
+
+
+
+    function card_close(){
+        iframe_body=iframe_doc.querySelector('body');
+        if(iframe_body){
+            let target_card=iframe_body.querySelectorAll('blockquote');
+            for(let k=0; k<target_card.length; k++){
+                if(target_card[k].classList.contains('edit_card')){
+                    target_card[k].classList.remove('edit_card');
+                    if(target_card[k].classList.contains('edit_card_e')){
+                        target_card[k].classList.remove('edit_card_e'); }}}}}
+
+
+
+    function card_edit(){
+        iframe_body=iframe_doc.querySelector('body');
+        if(iframe_body){
+            let target_card=iframe_body.querySelectorAll('blockquote');
+            for(let k=0; k<target_card.length; k++){
+                target_card[k].addEventListener('click', function(event){
+                    set_card(target_card[k], event); }); } // Card編集開始
+
+            function set_card(card, event){
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if(mode==1 &&
+                   !card.classList.contains('edit_card') && event.ctrlKey){ // 対象カードに指定
+                    if(!card.classList.contains('twitter-tweet')){
+                        card_close(); // 他のCardを閉じる
+                        card.classList.add('edit_card');
+                        edit_in(card); }}}
+
+        }} // card_edit()
+
+
+
+    function edit_in(card){
+        if(mode==1){
+            card.style.border='none';
+            card.style.position='relative';
+            card.style.padding='0.32em 0 0.2em 3em';
+            card.style.margin='0.5em 0';
+            card.style.position='relative';
+
+            add_svg(card);
+            bgm_color(card);
+            bg_color(card);
+        }} // edit_in()
+
+
+
+    function add_svg(card){
+        let SVG_bqm=
+            '<svg class="bqm" viewBox="0 0 256 256" '+
+            'style="height: 36px; width: 36px; fill: #fff">'+
+            '<path d="M94 49C78 52 63 65 52 76C26 104 1 159 39 188C57 203 86 '+
+            '201 103 185C113 175 118 161 118 147C118 132 110 117 97 108C90 '+
+            '103 76 102 74 93C72 89 75 84 76 80C81 69 90 60 94 49M212 49C196 '+
+            '52 181 65 170 76C144 104 119 159 157 188C175 203 204 201 221 '+
+            '185C231 175 236 161 236 147C236 132 228 117 215 108C208 103 194 '+
+            '102 192 93C190 89 193 84 194 80C199 69 208 60 212 49z"/></svg>';
+
+        let SVG_Mark=iframe_doc.createElement('div');
+        SVG_Mark.innerHTML=SVG_bqm;
+        let css='position: absolute; top: 0; left: .5em;';
+        SVG_Mark.style=css;
+
+        if(!card.querySelector('svg')){
+            card.appendChild(SVG_Mark); }}
+
+
+
+    function bg_color(card){
+        let set_color;
+        let bq_color=document.querySelector('#bq_color');
+        let bq_trance=document.querySelector('#bq_trance');
+        let bq_bgc=card.style.backgroundColor;
+        if(!bq_bgc){
+            bq_bgc='rgb(255, 255, 255)'; }
+        bq_color.style.backgroundColor=bq_bgc;
+        bq_trance.value=rgba_trance(bq_bgc);
+        set_color=bq_bgc;
+
+        import_color(card, bq_color, "bq_bqc");
+
+        let sw=bq_color;
+        let monitor_elem=new MutationObserver(import_c);
+        monitor_elem.observe(sw, {attributes: true});
+        function import_c(){
+            if(sw.style.opacity==2){
+                monitor_elem.disconnect();
+                setTimeout(()=>{
+                    bq_trance.value=1;
+                    set_color=bq_color.style.backgroundColor;
+                    sw.style.opacity=1;
+                }, 40);
+                monitor_elem.observe(sw, {attributes: true}); }}
+
+
+        bq_trance.addEventListener('input', function(event){
+            event.preventDefault();
+            let set_color_tmp=rgba(set_color, bq_trance.value);
+            let bq_color=document.querySelector('#bq_color');
+            bq_color.style.backgroundColor=set_color_tmp;
+            if(card.classList.contains('edit_card')){
+                card.style.backgroundColor=set_color_tmp; }});
+
+    } // bg_color()
+
+
+
+    function bgm_color(card){
+        let set_color;
+        let bqm_c;
+        let bqm_color=document.querySelector('#bqm_color');
+        let bqm_trance=document.querySelector('#bqm_trance');
+
+        let bqm=card.querySelector('.bqm');
+        if(bqm){
+            bqm_c=bqm.style.fill; }
+        else{
+            bqm_c='rgb(255, 255, 255)'; }
+        bqm_color.style.backgroundColor=bqm_c;
+        bqm_trance.value=rgba_trance(bqm_c);
+        set_color=bqm_c;
+
+        import_color(card, bqm_color, "bqm_c");
+
+        let sw=bqm_color;
+        let monitor_elem=new MutationObserver(import_c);
+        monitor_elem.observe(sw, {attributes: true});
+        function import_c(){
+            if(sw.style.opacity==2){
+                monitor_elem.disconnect();
+                setTimeout(()=>{
+                    bqm_trance.value=1;
+                    set_color=bqm_color.style.backgroundColor;
+                    sw.style.opacity=1;
+                }, 40);
+                monitor_elem.observe(sw, {attributes: true}); }}
+
+
+        bqm_trance.addEventListener('input', function(event){
+            event.preventDefault();
+            let set_color_tmp=rgba(set_color, bqm_trance.value);
+            let bqm_color=document.querySelector('#bqm_color');
+            bqm_color.style.backgroundColor=set_color_tmp;
+            if(card.classList.contains('edit_card')){
+                let bqm=card.querySelector('.bqm');
+                if(bqm){
+                    bqm.style.fill=set_color_tmp; }}});
+
+    } // bgm_color()
+
+
+    function rgba(c_val, alpha){ // 透過色の白背景時の非透過色に変換
+        let R, G, B;
+        let c_val_arr=c_val.split(',');
+        R=c_val_arr[0].replace(/[^0-9]/g, '');
+        G=c_val_arr[1].replace(/[^0-9]/g, '');
+        B=c_val_arr[2].replace(/[^0-9]/g, '');
+        return 'rgb('+cpColor(R, alpha)+', '+cpColor(G, alpha)+', '+cpColor(B, alpha)+')'
+
+        function cpColor(deci_code, alp){
+            const colorCode=deci_code*alp + 255*(1 - alp);
+            return Math.floor(colorCode).toString(10); }}
+
+
+
+    function import_color(card, sw, type){
+        let color_label;
+        let icon_button;
+
+        editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+        iframe_doc=editor_iframe.contentWindow.document;
+
+
+        if(ua==0){
+            color_label=document.querySelector('#cke_16_label');
+            icon_button=document.querySelector('#cke_17'); }
+        else if(ua==1){
+            color_label=document.querySelector('#cke_15_label');
+            icon_button=document.querySelector('#cke_16'); }
+
+        let target_p=color_label;
+        let monitor_p=new MutationObserver(get_copy);
+
+        sw.onclick=function(event){
+            if(card.classList.contains('edit_card')){
+                icon_button.click();
+                monitor_p.observe(target_p, {attributes: true}); }}
+
+
+        function get_copy(){
+            if(card.classList.contains('edit_card')){
+                sw.style.backgroundColor=color_label.style.backgroundColor;
+                if(type=="bq_bqc"){
+                    card.style.backgroundColor=sw.style.backgroundColor; }
+                else if(type=="bqm_c"){
+                    let bqm=card.querySelector('.bqm');
+                    if(bqm){
+                        bqm.style.fill=sw.style.backgroundColor; }}
+                sw.style.opacity=2; }
+            monitor_p.disconnect(); }
+
+
+        document.addEventListener('mousedown', function(){
+            monitor_p.disconnect(); });
+
+
+        if(document.querySelector('.cke_wysiwyg_frame')!=null){
+            editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+            if(editor_iframe){
+                iframe_doc=editor_iframe.contentWindow.document;
+                if(iframe_doc){
+                    iframe_doc.addEventListener('mousedown', function(){
+                        monitor_p.disconnect(); }); }}}
+
+
+        let target_body=document.querySelector('.l-body');
+        let monitor_generator=new MutationObserver(stealth);
+        monitor_generator.observe(target_body, {childList: true, subtree: true});
+
+        function stealth(){
+            let color_generator=document.querySelector('.ck-l-colorGenerator');
+            if(color_generator){
+                color_generator.addEventListener('mousedown', function(event){
+                    event.stopImmediatePropagation(); }); }}
+
+    } // import_color()
+
+
+
+    function rgba_trance(color_val){
+        let trance_val;
+        let c_val_arr=color_val.split(',');
+        if(c_val_arr.length==3){
+            trance_val=1; }
+        else{
+            trance_val=c_val_arr[3].replace(/[^0-9]/g, '')/10; }
+        return trance_val; }
+
+
+
+    function bg_reset(){
+        let bq_color=document.querySelector('#bq_color');
+        let bq_trance=document.querySelector('#bq_trance');
+        bq_color.style.background='#fff';
+        bq_trance.value=1; }
+
+
+
+    function sign(){
+        monitor0.disconnect();
+
+        let SVG_bqz='<svg style="width: 21px; fill: #333;" viewBox="0 0 640 512">'+
+            '<path d="M630 344L529 444c-9 9-25 9-34 0L394 344c-9-9-9-25 '+
+            '0-34l11-11c10-10 25-9 34.419.492L480 342V160H292a24 24 0 0 '+
+            '1-17-7l-16-16C244 122 255 96 276 96H520c13 0 24 11 24 '+
+            '24v222l40-43c9-10 245-10 34.419-.492l11 11c9 9 9 25.569-.001 '+
+            '34zm-265 15A24 24 0 0 0 348 352H160V171l40 43c9 10 25 10 '+
+            '34.419.491l11-11c9-9 9-25 0-34L145 68c-9-9-25-9-34 0L10 168c-9 '+
+            '9-9 25 0 35l11 11c10 10 25 9 34-.491L96 170V392c0 13 11 24 24 '+
+            '24h244c21 0 32-26 17-41l-16-16z"></path></svg>';
+
+
+        let disp=document.createElement("div");
+        disp.setAttribute("id", "disp_bq");
+        disp.innerHTML=
+            '<span class="bqs_hint hint"><b>▼</b> BlockQuote指定：Ctrl+Click</span>'+
+            '<span class="bqz_hint hint">マーク：'+ SVG_bqz +'</span>　'+
+
+            '<span class="bqc_hint hint">色：'+
+            '<span class="bqc_w"><span id="bqm_color">　</span></span></span> '+
+            '<input id="bqm_trance" type="number" max="10" min="0.1" step="0.1">'+
+            '：濃度　'+
+
+            '<span class="bqc_hint hint">背景色：'+
+            '<span class="bqc_w"><span id="bq_color">　</span></span></span> '+
+            '<input id="bq_trance" type="number" max="10" min="0.1" step="0.1">'+
+            '：濃度';
+
+
+        let css=
+            '#cke_1_contents { display: flex; flex-direction: column; } '+
+            '#disp_bq { margin: 0 0 5px; padding: 4px 0 1px; white-space: nowrap; '+
+            'font: normal 16px/24px Meiryo; color: #fff; background: #37474f; '+
+            'user-select: none; } '+
+
+            '#disp_bq .hint { position: relative; } '+
+            '#disp_bq .hint:hover::after { position: absolute; z-index: 1; height: 23px; '+
+            'padding: 1px 9px 0; font: 16px Meiryo; color: #fff; background: #000; } '+
+            '#disp_bq .bqs_hint { margin: 0 20px 0 15px; } '+
+            '#disp_bq .bqs_hint b { color: #a4fff7; } '+
+            '#disp_bq .bqz_hint.hint:hover::after { top: 27px; left: -94px; '+
+            'content: "　標準▸縦線：Click ▲　"; } '+
+            '#disp_bq .bqc_hint.hint:hover::after { top: 27px; right: -24px; '+
+            'content: "　カラーパレット表示：Click ▲　"; } '+
+
+            '#disp_bq svg { cursor: pointer; width: 16px; height: 16px; padding: 1px; '+
+            'border-radius: 2px; background: #fff; vertical-align: -3px; } '+
+            '#disp_bq .bqc_w { display: inline-block; overflow: hidden; width: 16px; '+
+            'height: 16px; border: 1px solid #fff; background: #fff; vertical-align: -3px; } '+
+            '#bq_color, #bqm_color { cursor: pointer; background: #fff; } '+
+            '#bq_trance, #bqm_trance { height: 22px; width: 15px; border: none; '+
+            'vertical-align: 1px; background: transparent; } '+
+            '#bq_trance::-webkit-inner-spin-button, '+
+            '#bqm_trance::-webkit-inner-spin-button { opacity: 1; } ';
+
+
+        if(ua==1){
+            css+='#bq_trance { width: 18px; }'; }
+
+
+        let style=document.createElement('style');
+        style.innerHTML=css;
+        disp.appendChild(style);
+
+        editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+        if(editor_iframe){
+            if(!target0.querySelector('#disp_bq')){
+                target0.insertBefore(disp, editor_iframe); }
+
+            iframe_doc=editor_iframe.contentWindow.document;
+            if(iframe_doc){
+                let iframe_html=iframe_doc.querySelector('html');
+                iframe_body=iframe_doc.querySelector('body');
+                if(iframe_html && iframe_body){
+                    let bq_style=iframe_doc.createElement('style');
+                    let css=
+                        '.edit_card { outline: 2px solid #2196f3; outline-offset: 6px; }';
+
+                    bq_style.setAttribute("id", "bq_style");
+                    bq_style.innerHTML=css;
+                    if(!iframe_html.querySelector('#bq_style')){
+                        iframe_html.appendChild(bq_style); }}}}
+
+        monitor0.observe(target0, {childList: true});
+
+        let disp_bq=document.querySelector('#disp_bq');
+        disp_bq.style.display='block';
+
+        bg_reset();
+
+    } // sign()
+
+
+
+    function sign_clear(){
+        if(target0.querySelector('#disp_bq')){
+            target0.querySelector('#disp_bq').style.display='none'; }}
+
+
+
+    function before_end(){
+        editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+        let submitButton=document.querySelectorAll('.js-submitButton');
+        submitButton[0].addEventListener("click", all_close, false);
+        submitButton[1].addEventListener("click", all_close, false);
+
+        function all_close(){
+            if(mode==1){
+                if(!editor_iframe){ // HTML表示の場合
+                    alert("⛔　LinkCard Editor が処理を終了していません\n\n"+
+                          "　　 通常表示画面に戻り 編集を終了してください");
+                    event.stopImmediatePropagation();
+                    event.preventDefault(); }
+                else if(editor_iframe){ // 通常表示の場合
+                    mode=0;
+                    card_close(); }}}
+    } // before_end()
+
+
+} // main()
