@@ -1,0 +1,732 @@
+// ==UserScript==
+// @name         BQuote Sign ⭐
+// @namespace    http://tampermonkey.net/
+// @version      0.4
+// @description  引用部「blockquote」をデザインする「Ctrl+F2」
+// @author       personwritep
+// @match        https://blog.ameba.jp/ucs/entry/srventry*
+// @exclude      https://blog.ameba.jp/ucs/entry/srventrylist.do*
+// @grant         none
+// ==/UserScript==
+
+
+let mode=0; // ツールのON/OFF
+
+let retry=0;
+let interval=setInterval(wait_target, 100);
+function wait_target(){
+    retry++;
+    if(retry>10){
+        clearInterval(interval); }
+    let target=document.querySelector('#cke_1_contents');
+    if(target){
+        clearInterval(interval);
+        main(); }}
+
+
+
+function main(){
+    let editor_iframe;
+    let iframe_doc;
+    let iframe_body;
+
+    let ua=0;
+    let agent=window.navigator.userAgent.toLowerCase();
+    if(agent.indexOf('firefox')>-1){ ua=1; }
+
+
+
+    let read_json=localStorage.getItem('BQ_Style');
+    let bqcard_set=JSON.parse(read_json);
+    if(!Array.isArray(bqcard_set)){
+        bqcard_set=[0, "#fff", "#fff", "", ""]; }
+
+    let write_json=JSON.stringify(bqcard_set);
+    localStorage.setItem('BQ_Style', write_json);
+
+
+
+    let target0=document.querySelector('#cke_1_contents');
+    let monitor0=new MutationObserver( catch_key );
+    monitor0.observe(target0, {childList: true});
+
+    catch_key();
+
+    function catch_key(){
+        editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+        if(editor_iframe){
+            iframe_doc=editor_iframe.contentWindow.document;
+            if(iframe_doc){
+
+                when_back();
+
+                iframe_doc.addEventListener('keydown', check_key);
+                document.addEventListener('keydown', check_key);
+
+                function check_key(event){
+                    if(event.ctrlKey && event.keyCode==113){ // ショートカット「Ctrl+F2」
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        if(mode==0 && editor_iframe){
+                            mode=1;
+                            sign();
+                            sign_reset();
+                            card_edit(); }
+                        else if(mode==1 && editor_iframe){
+                            mode=0;
+                            sign_clear();
+                            card_close(); }}
+
+                    if(event.keyCode==116){
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        alert(
+                            "　⛔　F5 / Ctrl + F5 / Shift + F5　\n"+
+                            "　　　　このショートカットは現在のページを遷移して、編集中の\n"+
+                            "　　　　データを損失する可能性があるので、無効にしています。\n"+
+                            "　　　　　　-----　BQuote Sign　-----"); }}}}
+
+        before_end();
+
+    } // catch_key()
+
+
+
+    function when_back(){
+        if(mode==1){
+            sign();
+            sign_reset();
+            card_close();
+            card_edit(); }}
+
+
+
+    function card_close(){
+        iframe_body=iframe_doc.querySelector('body');
+        if(iframe_body){
+            let target_card=iframe_body.querySelectorAll('blockquote');
+            for(let k=0; k<target_card.length; k++){
+                if(target_card[k].classList.contains('edit_card')){
+                    target_card[k].classList.remove('edit_card'); }}}}
+
+
+
+    function card_edit(){
+        iframe_body=iframe_doc.querySelector('body');
+        if(iframe_body){
+            let target_card=iframe_body.querySelectorAll('blockquote');
+            for(let k=0; k<target_card.length; k++){
+                target_card[k].addEventListener('click', function(event){
+                    set_card(target_card[k], event); }); } // Card編集開始
+
+            function set_card(card, event){
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if(mode==1 &&
+                   !card.classList.contains('edit_card') && event.ctrlKey){ // 対象カードに指定
+                    if(!card.classList.contains('twitter-tweet')){
+                        card_close(); // 他のCardを閉じる
+                        sign_reset();
+                        card.classList.add('edit_card');
+                        edit_in(card); }}}
+
+        }} // card_edit()
+
+
+
+    function edit_in(card){
+        if(mode==1){
+            set_mark(card);
+            bgm_color(card);
+            bg_color(card);
+            mem_plus(card);
+            mem_paste(card);
+        }} // edit_in()
+
+
+
+    function sign_reset(){
+        let bqm_color=document.querySelector('#bqm_color');
+        let bqm_trance=document.querySelector('#bqm_trance');
+        if(bqm_color && bqm_trance){
+            bqm_color.style.backgroundColor='rgb(255, 255, 255)';
+            bqm_trance.value=1; }
+        let bq_color=document.querySelector('#bq_color');
+        let bq_trance=document.querySelector('#bq_trance');
+        if(bq_color && bq_trance){
+            bq_color.style.backgroundColor='rgb(255, 255, 255)';
+            bq_trance.value=1; }}
+
+
+
+    function set_mark(card){
+        let bq_set=0; // デザイン種
+        let bqm=card.querySelector('.bqm');
+        if(!bqm){
+            add_style(card, 0);
+            add_svg(card, 0); }
+        else{
+            for(let k=0; k<10; k++){
+                if(bqm.classList.contains('m'+k)){
+                    bq_set=k;
+                    break;}}}
+
+        let bqz=document.querySelector('#bqz'); // デザイン選択
+        if(bqz){
+            bqz.onclick=function(){
+                if(bq_set<5){
+                    bq_set=bq_set+1; }
+                else{
+                    bq_set=0; }
+
+                add_style(card, bq_set);
+                add_svg(card, bq_set); }}}
+
+
+    function add_style(card, n){
+        switch(n){
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+                card.style.border='none';
+                card.style.position='relative';
+                card.style.padding='0.32em 0 0.2em 3em';
+                card.style.margin='0.5em 0';
+                break;
+            case 5:
+                card.style.borderLeft='5px solid';
+                card.style.position='relative';
+                card.style.padding='0.32em 0 0.2em 1.5em';
+                card.style.margin='0.5em 0 0.5em 1em';
+                break; }}
+
+
+    function add_svg(card, n){
+        let SVG_bqm;
+        switch(n){
+            case 0:
+                SVG_bqm=
+                    '<svg class="bqm m0" viewBox="0 0 256 256" '+
+                    'style="height: 36px; width: 36px; fill: #fff; '+
+                    'position: absolute; top: 0; left: 0.5em;">'+
+                    '<path d="M94 49C78 52 63 65 52 76C26 104 1 159 39 188C57 203 86 '+
+                    '201 103 185C113 175 118 161 118 147C118 132 110 117 97 108C90 '+
+                    '103 76 102 74 93C72 89 75 84 76 80C81 69 90 60 94 49M212 49C196 '+
+                    '52 181 65 170 76C144 104 119 159 157 188C175 203 204 201 221 '+
+                    '185C231 175 236 161 236 147C236 132 228 117 215 108C208 103 194 '+
+                    '102 192 93C190 89 193 84 194 80C199 69 208 60 212 49z"/></svg>';
+                break;
+
+            case 1:
+                SVG_bqm=
+                    '<svg class="bqm m1" viewBox="0 0 256 256" '+
+                    'style="height: 36px; width: 36px; fill: #fff; '+
+                    'position: absolute; top: 0; left: 0.5em;">'+
+                    '<path style="fill:#777" d="M63 198C55 192 46 188 40 179C18 146 39 '+
+                    '104 68 83C79 75 91 71 103 66C98 61 92 62 86 64C74 68 63 73 53 '+
+                    '81C21 105 -0.2 165 42 191C49 194 56 197 63 198M177 198C169 192 '+
+                    '160 188 154 179C132 146 153 104 182 83C193 75 205 71 217 66C212 '+
+                    '61 206 62 200 64C188 68 177 73 167 81C135 105 114 165 156 '+
+                    '191C163 194 170 197 177 198z"/>'+
+                    '<path d="M102 66C86 72 71 78 58 90C43 103 31 126 '+
+                    '30 146C29 165 39 187 57 195C86 208 120 177 118 147C117 132 103 '+
+                    '118 90 113C82 110 65 111 67 99C68 89 83 80 91 76C95 74 104 72 '+
+                    '102 66M216 66C200 72 185 78 172 90C157 103 145 126 144 '+
+                    '146C143 165 153 187 171 195C200 208 234 177 232 147C231 132 '+
+                    '217 118 204 113C196 110 179 111 181 99C182 89 197 80 205 '+
+                    '76C209 74 218 72 216 66z"/>'+
+                    '<path style="fill:#777" d="M66 99C67 102 67 106 70 108C72 110 75 '+
+                    '109 78 110C83 111 88 112 92 114C103 119 111 129 116 140C117 '+
+                    '135 114 128 111 124C102 107 84 99 66 99M180 99C181 102 181 106 '+
+                    '184 108C186 110 189 109 192 110C197 111 202 112 206 114C217 '+
+                    '119 225 129 230 140C231 135 228 128 225 124C216 107 198 99 180 '+
+                    '99zz"/></svg>';
+                break;
+
+            case 2:
+                SVG_bqm=
+                    '<svg class="bqm m2" viewBox="0 0 256 256" '+
+                    'style="height: 36px; width: 36px; fill: #fff; '+
+                    'position: absolute; top: 0; left: 0.5em;">'+
+                    '<path d="M96 49C85 52 78 59 70 67C49 88 38 117 35 '+
+                    '147C33 164 36 188 54 195C91 209 129 176 121 137C119 131 117 125 '+
+                    '113 120C108 113 102 108 94 104C87 101 79 100 78 92C76 82 86 70 90 '+
+                    '62C93 58 97 54 96 49M210 49C199 52 192 59 184 67C163 88 152 117 '+
+                    '149 147C147 164 150 188 168 195C205 209 243 176 235 137C233 131 '+
+                    '231 125 227 120C222 113 216 108 208 104C201 101 193 100 192 '+
+                    '92C190 82 200 70 204 62C207 58 211 54 210 49z"/>'+
+                    '<path style="fill:#777" d="M81 56C80 57 81 57 81 57C82 56 81 56 81 '+
+                    '56M195 56C194 57 195 57 195 57C196 56 195 56 195 56M43 188C41 '+
+                    '180 36 173 35 164C32 136 42 105 58 82C64 73 74 66 80 57C70 61 63 '+
+                    '69 56 76C52 80 48 85 45 90C25 118 9 164 43 188M157 188C155 180 '+
+                    '150 173 149 164C146 136 156 105 172 82C178 73 188 66 194 57C184 '+
+                    '61 177 69 170 76C166 80 162 85 159 90C139 118 123 164 157 188M43 '+
+                    '188L44 189L43 188M157 188L158 189L157 188z"/></svg>';
+                break;
+
+            case 3:
+                SVG_bqm=
+                    '<svg class="bqm m3" viewBox="0 0 256 256" '+
+                    'style="height: 36px; width: 36px; fill: #fff; '+
+                    'position: absolute; top: 0; left: 0.5em;">'+
+                    '<path d="M78 28C69 25 59 30 51 35C36 46 28 66 23 83C14 118 14 156 '+
+                    '24 191C28 208 37 225 50 237C66 250 88 246 101 231C116 213 123 190 '+
+                    '120 166C117 145 110 124 95 109C91 105 87 101 82 99C77 96 72 95 67 '+
+                    '91C54 82 51 63 57 49C62 39 71 36 78 28M195 28C186 25 176 30 168 '+
+                    '35C153 46 145 66 140 83C131 118 131 156 141 191C145 208 154 225 '+
+                    '167 237C183 250 205 246 218 231C233 213 240 190 237 166C234 145 '+
+                    '227 124 212 109C208 105 204 101 199 99C194 96 189 95 184 91C171 '+
+                    '82 168 63 174 49C179 39 188 36 195 28z"/></svg>';
+                break;
+
+            case 4:
+                SVG_bqm=
+                    '<svg class="bqm m4" viewBox="0 0 512 512" '+
+                    'style="height: 44px; width: 30px; fill: #fff; '+
+                    'position: absolute; top: 0; left: 0.5em;">'+
+                    '<path d="M464 256h-80v-64c0-35 29-64 64-64h8c13 0 24-11 '+
+                    '24-24V56c0-13-11-24-24-24h-8c-88 0-160 72-160 160v240c0 27 22 '+
+                    '48 48 48h128c27 0 48-22 48-48V304c0-27-22-48-48-48zm-288 '+
+                    '0H96v-64c0-35 29-64 64-64h8c13 0 24-11 24-24V56c0-13-11-24-24-'+
+                    '24h-8C72 32 0 104 0 192v240c0 27 22 48 48 48h128c27 0 48-22 48-'+
+                    '48V304c0-27-22-48-48-48z"></path></svg>';
+                break;
+
+            case 5:
+                SVG_bqm=
+                    '<svg class="bqm m5" viewBox="0 0 0 0" '+
+                    'style="height: 0; width: 0; position: absolute; fill: #fff;"></svg>';
+                break;
+
+        } // switch()
+
+
+        let SVG=iframe_doc.createElement('svg');
+        if(!card.querySelector('svg')){
+            card.appendChild(SVG); }
+        card.querySelector('svg').outerHTML=SVG_bqm;
+
+        let bqm=card.querySelector('.bqm'); // SVGマーク
+        let bqm_color=document.querySelector('#bqm_color');
+
+        if(bqm && bqm_color.style.backgroundColor){
+            bqm.style.fill=bqm_color.style.backgroundColor;
+            if(n==5){
+                card.style.borderLeftColor=bqm_color.style.backgroundColor; }}
+
+    } // add_svg()
+
+
+
+    function bgm_color(card){
+        let set_color;
+        let bqm_c; // 引用部の svg色・縦傍線色
+        let bqm_color=document.querySelector('#bqm_color');
+        let bqm_trance=document.querySelector('#bqm_trance');
+        let bq_set; // デザイン種
+
+        let bqm=card.querySelector('.bqm'); // SVGマーク
+        if(!bqm){
+            bq_set=0;
+            bqm_c='rgb(255, 255, 255)'; }
+        else{
+            for(let k=0; k<10; k++){
+                if(bqm.classList.contains('m'+k)){
+                    bq_set=k;
+                    break; }}
+            if(bqm.style.fill){
+                bqm_c=bqm.style.fill; } // 縦傍線色は svg色をコピーする
+            else{
+                bqm_c='rgb(255, 255, 255)'; }}
+
+
+        bqm_color.style.backgroundColor=bqm_c;
+        bqm_trance.value=rgba_trance(bqm_c);
+        set_color=bqm_c;
+
+        import_color(card, bqm_color, "bqm_c");
+
+        let sw=bqm_color;
+        let monitor_elem=new MutationObserver(import_c);
+        monitor_elem.observe(sw, {attributes: true});
+        function import_c(){
+            if(sw.style.opacity==2){
+                monitor_elem.disconnect();
+                setTimeout(()=>{
+                    bqm_trance.value=1;
+                    set_color=bqm_color.style.backgroundColor;
+                    sw.style.opacity=1;
+                }, 40);
+                monitor_elem.observe(sw, {attributes: true}); }}
+
+
+        bqm_trance.addEventListener('input', function(event){
+            event.preventDefault();
+            let set_color_tmp=rgba(set_color, bqm_trance.value);
+            let bqm_color=document.querySelector('#bqm_color');
+            bqm_color.style.backgroundColor=set_color_tmp;
+            if(card.classList.contains('edit_card')){
+                let bqm=card.querySelector('.bqm');
+                if(bqm){
+                    bqm.style.fill=set_color_tmp;
+                    card.style.borderLeftColor=set_color_tmp; }}});
+
+    } // bgm_color()
+
+
+
+    function bg_color(card){
+        let set_color;
+        let bq_color=document.querySelector('#bq_color');
+        let bq_trance=document.querySelector('#bq_trance');
+        let bq_bgc=card.style.backgroundColor;
+        if(!bq_bgc){
+            bq_bgc='rgb(255, 255, 255)'; }
+        bq_color.style.backgroundColor=bq_bgc;
+        bq_trance.value=rgba_trance(bq_bgc);
+        set_color=bq_bgc;
+
+        import_color(card, bq_color, "bq_bqc");
+
+        let sw=bq_color;
+        let monitor_elem=new MutationObserver(import_c);
+        monitor_elem.observe(sw, {attributes: true});
+        function import_c(){
+            if(sw.style.opacity==2){
+                monitor_elem.disconnect();
+                setTimeout(()=>{
+                    bq_trance.value=1;
+                    set_color=bq_color.style.backgroundColor;
+                    sw.style.opacity=1;
+                }, 40);
+                monitor_elem.observe(sw, {attributes: true}); }}
+
+
+        bq_trance.addEventListener('input', function(event){
+            event.preventDefault();
+            let set_color_tmp=rgba(set_color, bq_trance.value);
+            let bq_color=document.querySelector('#bq_color');
+            bq_color.style.backgroundColor=set_color_tmp;
+            if(card.classList.contains('edit_card')){
+                card.style.backgroundColor=set_color_tmp; }});
+
+    } // bg_color()
+
+
+
+    function rgba(c_val, alpha){ // 透過色の白背景時の非透過色に変換
+        let R, G, B;
+        let c_val_arr=c_val.split(',');
+        R=c_val_arr[0].replace(/[^0-9]/g, '');
+        G=c_val_arr[1].replace(/[^0-9]/g, '');
+        B=c_val_arr[2].replace(/[^0-9]/g, '');
+        return 'rgb('+cpColor(R, alpha)+', '+cpColor(G, alpha)+', '+cpColor(B, alpha)+')'
+
+        function cpColor(deci_code, alp){
+            const colorCode=deci_code*alp + 255*(1 - alp);
+            return Math.floor(colorCode).toString(10); }}
+
+
+
+    function import_color(card, sw, type){
+        let color_label;
+        let icon_button;
+
+        editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+        iframe_doc=editor_iframe.contentWindow.document;
+
+
+        if(ua==0){
+            color_label=document.querySelector('#cke_16_label');
+            icon_button=document.querySelector('#cke_17'); }
+        else if(ua==1){
+            color_label=document.querySelector('#cke_15_label');
+            icon_button=document.querySelector('#cke_16'); }
+
+        let target_p=color_label;
+        let monitor_p=new MutationObserver(get_copy);
+
+        sw.onclick=function(event){
+            if(card.classList.contains('edit_card')){
+                icon_button.click();
+                monitor_p.observe(target_p, {attributes: true}); }}
+
+
+        function get_copy(){
+            if(card.classList.contains('edit_card')){
+                sw.style.backgroundColor=color_label.style.backgroundColor;
+                if(type=="bq_bqc"){
+                    card.style.backgroundColor=sw.style.backgroundColor; }
+                else if(type=="bqm_c"){
+                    let bqm=card.querySelector('.bqm');
+                    if(bqm){
+                        bqm.style.fill=sw.style.backgroundColor;
+                        card.style.borderLeftColor=sw.style.backgroundColor; }}
+                sw.style.opacity=2; }
+            monitor_p.disconnect(); }
+
+
+        document.addEventListener('mousedown', function(){
+            monitor_p.disconnect(); });
+
+
+        if(document.querySelector('.cke_wysiwyg_frame')!=null){
+            editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+            if(editor_iframe){
+                iframe_doc=editor_iframe.contentWindow.document;
+                if(iframe_doc){
+                    iframe_doc.addEventListener('mousedown', function(){
+                        monitor_p.disconnect(); }); }}}
+
+
+        let target_body=document.querySelector('.l-body');
+        let monitor_generator=new MutationObserver(stealth);
+        monitor_generator.observe(target_body, {childList: true, subtree: true});
+
+        function stealth(){
+            let color_generator=document.querySelector('.ck-l-colorGenerator');
+            if(color_generator){
+                color_generator.addEventListener('mousedown', function(event){
+                    event.stopImmediatePropagation(); }); }}
+
+    } // import_color()
+
+
+
+    function rgba_trance(color_val){
+        let trance_val;
+        let c_val_arr=color_val.split(',');
+        if(c_val_arr.length==3){
+            trance_val=1; }
+        else{
+            trance_val=c_val_arr[3].replace(/[^0-9]/g, '')/10; }
+        return trance_val; }
+
+
+
+    function mem_plus(card){
+        let bqmpl=document.querySelector('#bqmpl');
+        if(bqmpl){
+            bqmpl.onclick=function(){
+                let ok=confirm(
+                    "　　 🟠 現在のBlockQuoteのデザインを登録します\n"+
+                    "　　　　これまでの登録を上書きして良いですか？\n");
+
+                if(ok){
+                    if(card.classList.contains('edit_card')){
+                        let bq_set;
+                        let bqm_c;
+                        let bq_bgc;
+
+                        let bqm=card.querySelector('.bqm'); // SVGマーク
+                        if(!bqm){
+                            bq_set=0;
+                            bqm_c='rgb(255, 255, 255)'; }
+                        else{
+                            for(let k=0; k<10; k++){
+                                if(bqm.classList.contains('m'+k)){
+                                    bq_set=k;
+                                    break; }}
+                            if(bqm.style.fill){
+                                bqm_c=bqm.style.fill; }
+                            else{
+                                bqm_c='rgb(255, 255, 255)'; }}
+                        bqcard_set[0]=bq_set;
+                        bqcard_set[1]=bqm_c;
+
+                        bq_bgc=card.style.backgroundColor; // 引用部背景色
+                        if(!bq_bgc){
+                            bq_bgc='rgb(255, 255, 255)'; }
+                        bqcard_set[2]=bq_bgc;
+
+                        let write_json=JSON.stringify(bqcard_set);
+                        localStorage.setItem('BQ_Style', write_json); // ストレージ保存
+                    }}}}
+
+    } // mem_plus()
+
+
+
+    function mem_paste(card){
+        let bqmps=document.querySelector('#bqmps');
+        if(bqmps){
+            bqmps.onclick=function(event){ // 引用部に「登録デザイン」を適用
+                if(card.classList.contains('edit_card')){
+                    let bqm_color=document.querySelector('#bqm_color');
+                    let bqm_trance=document.querySelector('#bqm_trance');
+                    let bq_color=document.querySelector('#bq_color');
+                    let bq_trance=document.querySelector('#bq_trance');
+
+                    if(bqm_color && bqm_trance){
+                        bqm_color.style.backgroundColor=bqcard_set[1];
+                        bqm_trance.value=1; }
+                    add_style(card, bqcard_set[0]);
+                    add_svg(card, bqcard_set[0]);
+
+                    if(bq_color && bq_trance){
+                        bq_color.style.backgroundColor=bqcard_set[2];
+                        bq_trance.value=1; }
+                    card.style.backgroundColor=bqcard_set[2];
+
+                    bgm_color(card);
+                    bg_color(card);
+                }}
+
+        }} // mem_paste()
+
+
+
+    function sign(){
+        monitor0.disconnect();
+
+        let SVG_bqz=
+            '<svg id="bqz" style="width: 20px; height: 16px; fill: #333;" '+
+            'viewbox="36 -20 440 440">'+
+            '<path d="M365 103L365 258L337 230C328 221 320 212 306 218C301 '+
+            '220 298 224 294 228C289 233 286 238 285 245C285 254 291 260 297 '+
+            '266L329 298L368 337C375 344 381 352 391 352C404 352 412 342 421 '+
+            '333L477 277C485 269 497 261 499 249C501 233 481 213 465 216C457 '+
+            '218 451 227 445 233L419 259L419 110L419 75C419 68 419 61 415 '+
+            '55C406 45 386 48 374 48L281 48C269 48 252 45 241 52C223 63 224 '+
+            '91 244 101C251 104 259 103 266 103L304 103L365 103M100 147L100 '+
+            '294L100 330C100 337 100 344 104 350C113 361 133 357 146 357L240 '+
+            '357C253 357 270 360 281 353C298 342 296 317 279 307C270 303 261 '+
+            '303 251 303L215 303L154 303L154 148L184 178C189 183 195 190 203 '+
+            '190C212 190 218 184 224 178C229 173 233 169 234 162C235 153 228 '+
+            '145 222 139L189 106L151 68C144 61 138 53 127 53C115 53 106 65 98 '+
+            '73L42 129C34 137 22 145 20 157C18 172 37 192 53 190C62 188 68 179 '+
+            '74 173L100 147z"></path></svg>';
+
+        let SVG_bqmpl=
+            '<svg id="bqmpl" viewBox="-45 -20 540 540">'+
+            '<path fill="#333" d="M416 208H272V64c0-18-14-32-32-32h-32c-18 '+
+            '0-32 14-32 32v144H32c-18 0-32 14-32 32v32c0 18 14 32 32 32h144v144c0 '+
+            '18 14 32 32 32h32c18 0 32-14 32-32V304h144c18 0 32-14 '+
+            '32-32v-32c0-18-14-32-32-32z"></path></svg>';
+
+        let SVG_bqmps=
+            '<svg id="bqmps" viewBox="0 -10 256 256">'+
+            '<path style="fill:#fff" d="M0 0L0 256L256 256L256 0L0 0z"/>'+
+            '<path style="fill:#333" d="M102 136L72 136C67 136 61 136 58 141C54 148 '+
+            '59 153 63 158C72 169 82 180 91 191C100 201 109 212 118 222C122 226 '+
+            '126 232 132 232C138 232 142 226 146 222C155 211 164 201 173 190C182 '+
+            '179 192 169 201 158C205 153 210 148 207 142C203 136 198 136 192 '+
+            '136L162 136C162 108 157 79 145 54C139 43 132 31 121 24C102 13 79 '+
+            '13 58 17C53 18 39 20 38 27C37 31 49 29 51 29C67 27 85 32 96 45C102 53 '+
+            '104 63 105 72C108 94 105 114 102 136z"/></svg>';
+
+
+        let disp=document.createElement("div");
+        disp.setAttribute("id", "disp_bq");
+        disp.innerHTML=
+            '<span class="bqs_hint hint"><b>▼</b> BlockQuote指定：Ctrl+Click</span>'+
+            '<span class="bqz_hint hint">マーク：'+ SVG_bqz +'</span>　'+
+            '<span class="bqc_hint hint">色：'+
+            '<span class="bqc_w"><span id="bqm_color">　</span></span></span> '+
+            '<input id="bqm_trance" type="number" max="10" min="0.1" step="0.1">'+
+            '：濃度　'+
+            '<span class="bqc_hint hint">背景色：'+
+            '<span class="bqc_w"><span id="bq_color">　</span></span></span> '+
+            '<input id="bq_trance" type="number" max="10" min="0.1" step="0.1">'+
+            '：濃度　'+
+            'M：<span class="bqmpl_hint hint">'+ SVG_bqmpl +'</span> '+
+            '<span class="bqmp_hint hint">'+ SVG_bqmps +'</span>';
+
+
+        let css=
+            '#cke_1_contents { display: flex; flex-direction: column; } '+
+            '#disp_bq { margin: 0 0 5px; padding: 4px 0 1px; white-space: nowrap; '+
+            'font: normal 16px/24px Meiryo; color: #fff; background: #37474f; '+
+            'user-select: none; } '+
+
+            '#disp_bq .hint { position: relative; } '+
+            '#disp_bq .hint:hover::after { position: absolute; z-index: 1; height: 23px; '+
+            'padding: 1px 9px 0; font: 16px Meiryo; color: #fff; background: #000; } '+
+            '#disp_bq .bqs_hint { margin: 0 20px 0 15px; } '+
+            '#disp_bq .bqs_hint b { color: #a4fff7; } '+
+            '#disp_bq .bqz_hint.hint:hover::after { top: 27px; left: -110px; '+
+            'content: "　デザイン変更：Click ▲　"; } '+
+            '#disp_bq .bqc_hint.hint:hover::after { top: 27px; right: -24px; '+
+            'content: "　カラーパレット表示：Click ▲　"; } '+
+            '#disp_bq .bqmpl_hint.hint:hover::after { top: 27px; left: -178px; '+
+            'content: "　デザイン登録：Click ▲　"; } '+
+            '#disp_bq .bqmp_hint.hint:hover::after { top: 27px; left: -226px; '+
+            'content: "　登録デザインを適用：Click ▲ "; } '+
+
+            '#disp_bq svg { cursor: pointer; width: 16px; height: 16px; padding: 1px; '+
+            'border-radius: 2px; background: #fff; vertical-align: -3px; } '+
+            '#disp_bq .bqc_w { display: inline-block; overflow: hidden; width: 16px; '+
+            'height: 16px; border: 1px solid #fff; background: #fff; vertical-align: -3px; '+
+            'margin-left: -2px; } '+
+            '#bq_color, #bqm_color { cursor: pointer; background: #fff; } '+
+            '#bq_trance, #bqm_trance { height: 22px; width: 15px; border: none; '+
+            'vertical-align: 1px; background: transparent; margin-right: -2px; } '+
+            '#bq_trance::-webkit-inner-spin-button, '+
+            '#bqm_trance::-webkit-inner-spin-button { opacity: 1; } ';
+
+
+        if(ua==1){
+            css+='#disp_bq .bqs_hint { margin: 0 20px 0 10px; } '+
+                '#bq_trance, #bqm_trance { width: 18px; }'; }
+
+
+        let style=document.createElement('style');
+        style.innerHTML=css;
+        disp.appendChild(style);
+
+        editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+        if(editor_iframe){
+            if(!target0.querySelector('#disp_bq')){
+                target0.insertBefore(disp, editor_iframe); }
+
+            iframe_doc=editor_iframe.contentWindow.document;
+            if(iframe_doc){
+                let iframe_html=iframe_doc.querySelector('html');
+                iframe_body=iframe_doc.querySelector('body');
+                if(iframe_html && iframe_body){
+                    let bq_style=iframe_doc.createElement('style');
+                    let css=
+                        '.edit_card { outline: 2px solid #2196f3; outline-offset: 6px; }';
+
+                    bq_style.setAttribute("id", "bq_style");
+                    bq_style.innerHTML=css;
+                    if(!iframe_html.querySelector('#bq_style')){
+                        iframe_html.appendChild(bq_style); }}}}
+
+        monitor0.observe(target0, {childList: true});
+
+        let disp_bq=document.querySelector('#disp_bq');
+        disp_bq.style.display='block';
+
+    } // sign()
+
+
+
+    function sign_clear(){
+        if(target0.querySelector('#disp_bq')){
+            target0.querySelector('#disp_bq').style.display='none'; }}
+
+
+
+    function before_end(){
+        editor_iframe=document.querySelector('.cke_wysiwyg_frame');
+        let submitButton=document.querySelectorAll('.js-submitButton');
+        submitButton[0].addEventListener("click", all_close, false);
+        submitButton[1].addEventListener("click", all_close, false);
+
+        function all_close(){
+            if(mode==1){
+                if(!editor_iframe){ // HTML表示の場合
+                    alert("⛔　BQuote Sign が処理を終了していません\n\n"+
+                          "　　 通常表示画面に戻り 編集を終了してください");
+                    event.stopImmediatePropagation();
+                    event.preventDefault(); }
+                else if(editor_iframe){ // 通常表示の場合
+                    mode=0;
+                    card_close(); }}}
+    } // before_end()
+
+
+} // main()
