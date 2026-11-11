@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        BQuote Sign ⭐
 // @namespace        http://tampermonkey.net/
-// @version        1.2
+// @version        1.3
 // @description        引用部「blockquote」をデザインする「Ctrl+F2」
 // @author        Ameba Blog User
 // @match        https://blog.ameba.jp/ucs/entry/srventryinsertinput.do*
@@ -11,6 +11,9 @@
 // @updateURL        https://github.com/personwritep/BQuote_Sign/raw/main/BQuote_Sign.user.js
 // @downloadURL        https://github.com/personwritep/BQuote_Sign/raw/main/BQuote_Sign.user.js
 // ==/UserScript==
+
+
+let listen=Symbol();
 
 
 let mode=0; // ツールのON/OFF
@@ -58,38 +61,46 @@ function main(){
     catch_key();
 
     function catch_key(){
+        if(!document[listen]){
+            document.addEventListener('keydown', check_key);
+            document[listen]=true; }
+
         editor_iframe=document.querySelector('.cke_wysiwyg_frame');
         if(editor_iframe){
             iframe_doc=editor_iframe.contentWindow.document;
             if(iframe_doc){
+                if(!iframe_doc[listen]){
+                    iframe_doc.addEventListener('keydown', check_key);
+                    iframe_doc[listen]=true; }
 
                 when_back();
+            }}
 
-                iframe_doc.addEventListener('keydown', check_key);
-                document.addEventListener('keydown', check_key);
 
-                function check_key(event){
-                    if(event.ctrlKey && event.keyCode==113){ // ショートカット「Ctrl+F2」
-                        event.preventDefault();
-                        event.stopImmediatePropagation();
-                        if(mode==0 && editor_iframe){
-                            mode=1;
-                            sign();
-                            sign_reset();
-                            card_edit(); }
-                        else if(mode==1 && editor_iframe){
-                            mode=0;
-                            sign_clear();
-                            card_close(); }}
+        function check_key(event){
+            if(event.ctrlKey && event.keyCode==113){ // ショートカット「Ctrl+F2」
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                if(mode==0 && editor_iframe){
+                    mode=1;
+                    sign();
+                    sign_reset();
+                    card_edit(); }
+                else if(mode==1 && editor_iframe){
+                    mode=0;
+                    sign_clear();
+                    card_close(); }}
 
-                    if(event.keyCode==116){
-                        event.preventDefault();
-                        event.stopImmediatePropagation();
-                        alert(
-                            "　⛔　F5 / Ctrl + F5 / Shift + F5　\n"+
-                            "　　　　このショートカットは現在のページを遷移して、編集中の\n"+
-                            "　　　　データを損失する可能性があるので、無効にしています。\n"+
-                            "　　　　　　-----　BQuote Sign　-----"); }}}}
+            if(event.keyCode==116){
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                alert(
+                    "　⛔　F5 / Ctrl + F5 / Shift + F5　\n"+
+                    "　　　　このショートカットは現在のページを遷移して、編集中の\n"+
+                    "　　　　データを損失する可能性があるので、無効にしています。\n"+
+                    "　　　　　　-----　BQuote Sign　-----"); }
+
+        } // check_key()
 
         before_end();
 
@@ -121,8 +132,8 @@ function main(){
         if(iframe_body){
             let target_card=iframe_body.querySelectorAll('blockquote');
             for(let k=0; k<target_card.length; k++){
-                target_card[k].addEventListener('click', function(event){
-                    set_card(target_card[k], event); }); } // Card編集開始
+                target_card[k].onclick=(event)=>{
+                    set_card(target_card[k], event); }} // Card編集開始
 
             function set_card(card, event){
                 event.preventDefault();
@@ -358,7 +369,7 @@ function main(){
                 }, 40);
                 monitor_elem.observe(sw, {attributes: true}); }}
 
-        bqm_trance.addEventListener('input', function(event){
+        bqm_trance.oninput=(event)=>{
             event.preventDefault();
             let set_color_tmp=rgba(set_color, bqm_trance.value);
             let bqm_color=document.querySelector('#bqm_color');
@@ -368,7 +379,7 @@ function main(){
                 if(bqm){
                     bqm.style.color=set_color_tmp;
                     if(bq_set==4 || bq_set==5 || bq_set==6){
-                        card.style.borderLeftColor=set_color_tmp; }}}});
+                        card.style.borderLeftColor=set_color_tmp; }}}}
 
     } // bgm_color()
 
@@ -401,13 +412,13 @@ function main(){
                 monitor_elem.observe(sw, {attributes: true}); }}
 
 
-        bq_trance.addEventListener('input', function(event){
+        bq_trance.oninput=(event)=>{
             event.preventDefault();
             let set_color_tmp=rgba(set_color, bq_trance.value);
             let bq_color=document.querySelector('#bq_color');
             bq_color.style.backgroundColor=set_color_tmp;
             if(card.classList.contains('edit_card')){
-                card.style.backgroundColor=set_color_tmp; }});
+                card.style.backgroundColor=set_color_tmp; }}
 
     } // bg_color()
 
@@ -466,8 +477,8 @@ function main(){
             monitor_p.disconnect(); }
 
 
-        document.addEventListener('mousedown', function(){
-            monitor_p.disconnect(); });
+        document.onmousedown=()=>{
+            monitor_p.disconnect(); }
 
 
         if(document.querySelector('.cke_wysiwyg_frame')!=null){
@@ -475,8 +486,8 @@ function main(){
             if(editor_iframe){
                 iframe_doc=editor_iframe.contentWindow.document;
                 if(iframe_doc){
-                    iframe_doc.addEventListener('mousedown', function(){
-                        monitor_p.disconnect(); }); }}}
+                    iframe_doc.onmousedown=()=>{
+                        monitor_p.disconnect(); }}}}
 
 
         let target_body=document.querySelector('.l-body');
@@ -486,8 +497,8 @@ function main(){
         function stealth(){
             let color_generator=document.querySelector('.ck-l-colorGenerator');
             if(color_generator){
-                color_generator.addEventListener('mousedown', function(event){
-                    event.stopImmediatePropagation(); }); }}
+                color_generator.onmousedown=(event)=>{
+                    event.stopImmediatePropagation(); }}}
 
     } // import_color()
 
@@ -790,8 +801,12 @@ function main(){
     function before_end(){
         editor_iframe=document.querySelector('.cke_wysiwyg_frame');
         let submitButton=document.querySelectorAll('.js-submitButton');
-        submitButton[0].addEventListener("mousedown", all_close, false);
-        submitButton[1].addEventListener("mousedown", all_close, false);
+        if(!submitButton[0][listen]){
+            submitButton[0].addEventListener("mousedown", all_close, false);
+            submitButton[0][listen]=true; }
+        if(!submitButton[1][listen]){
+            submitButton[1].addEventListener("mousedown", all_close, false);
+            submitButton[1][listen]=true; }
 
         function all_close(){
             if(mode==1){
